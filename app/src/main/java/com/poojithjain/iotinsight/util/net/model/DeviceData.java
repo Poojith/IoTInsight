@@ -1,0 +1,59 @@
+package com.poojithjain.iotinsight.util.net.model;
+
+import com.orm.SugarRecord;
+
+import java.util.Date;
+
+/**
+ * Created by poojith on 2/25/17.
+ */
+
+public class DeviceData extends SugarRecord {
+    String deviceVersion;
+    String battery;
+    Date lastSyncTime;
+    Date creationTime;
+
+    public DeviceData() {
+
+    }
+
+    public DeviceData(String deviceVersion, String battery, Date date, Date currentDate) {
+        this.deviceVersion = deviceVersion;
+        this.battery = battery;
+        this.lastSyncTime = date;
+        this.creationTime = currentDate;
+    }
+
+//    public String getDeviceVersion() {
+//        return deviceVersion;
+//    }
+//
+//    public void setDeviceVersion(String deviceVersion) {
+//        this.deviceVersion = deviceVersion;
+//    }
+//
+//    public String getBattery() {
+//        return battery;
+//    }
+//
+//    public void setBattery(String battery) {
+//        this.battery = battery;
+//    }
+//
+//    public Date getLastSyncTime() {
+//        return lastSyncTime;
+//    }
+//
+//    public void setLastSyncTime(Date lastSyncTime) {
+//        this.lastSyncTime = lastSyncTime;
+//    }
+//
+//    public Date getCreationTime() {
+//        return creationTime;
+//    }
+//
+//    public void setCreationTime(Date creationTime) {
+//        this.creationTime = creationTime;
+//    }
+}
