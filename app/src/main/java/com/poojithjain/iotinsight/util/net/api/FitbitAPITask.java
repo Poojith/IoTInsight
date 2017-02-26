@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.orm.SugarContext;
 import com.poojithjain.iotinsight.util.app.AppConstants;
 import com.poojithjain.iotinsight.util.app.AppSharedPreferences;
 import com.poojithjain.iotinsight.util.net.data.AuthResponseBody;
@@ -19,9 +18,6 @@ import com.poojithjain.iotinsight.util.net.data.TrackerAlarm;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,10 +62,10 @@ public class FitbitAPITask extends AsyncTask {
 
                 int weekCount = 0;
 
-                for(String weekDay : weekDays) {
+                for (String weekDay : weekDays) {
                     weekCount = weekCount << 1;
 
-                    if(alarmDays.contains(weekDay)) {
+                    if (alarmDays.contains(weekDay)) {
                         weekCount = weekCount | 1;
                     }
                 }
@@ -93,19 +89,18 @@ public class FitbitAPITask extends AsyncTask {
 
                 String deviceVersion = "Fitbit " + device.getDeviceVersion();
                 String battery = device.getBattery();
-                Date date = new DateTime(device.getLastSyncTime()).toDate();
-                Date currentDate = new Date();
 
-                DeviceData deviceData = new DeviceData(deviceVersion, battery, date, currentDate);
+                long time = DateTime.parse(device.getLastSyncTime()).getMillis();
+
+
+                DeviceData deviceData = new DeviceData(deviceVersion, battery, time, System.currentTimeMillis());
                 deviceData.save();
 
                 DeviceData testData = DeviceData.findById(DeviceData.class, 1);
-
-                Log.d("Battery", testData.getBattery());
-                DateFormat df1 = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-                Log.i("Sync time", df1.format(testData.getLastSyncTime()));
-                Log.i("Tracker ID", String.valueOf(trackerID));
-                Log.i("Creation time", df1.format(testData.getCreationTime()));
+//
+//                Log.d("Battery", testData.getBattery());
+//                Log.i("Sync time", testData.getLastSyncTime());
+//                Log.i("Creation time", testData.getCreationTime());
 
             } else if (requestType == RequestType.AccessToken) {
                 Thread.sleep(8000);
