@@ -4,17 +4,24 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.orm.SugarContext;
 import com.poojithjain.iotinsight.util.app.AppConstants;
 import com.poojithjain.iotinsight.util.app.AppSharedPreferences;
 import com.poojithjain.iotinsight.util.net.data.AuthResponseBody;
+import com.poojithjain.iotinsight.util.net.model.AlarmData;
+import com.poojithjain.iotinsight.util.net.model.DeviceData;
 import com.poojithjain.iotinsight.util.net.data.FitbitAlarms;
 import com.poojithjain.iotinsight.util.net.data.FitbitDevice;
 import com.poojithjain.iotinsight.util.net.data.RequestType;
 import com.poojithjain.iotinsight.util.net.data.TrackerAlarm;
 
+import org.joda.time.DateTime;
+
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,28 +51,64 @@ public class FitbitAPITask extends AsyncTask {
 
     @Override
     protected Object doInBackground(Object[] objects) {
-        try{
+        try {
 
             if (requestType == RequestType.Alarm) {
-                // TODO get trackerId
                 Response<FitbitAlarms> alarms = api.getAlarm(trackerID).execute();
                 FitbitAlarms alarm = alarms.body();
-                TrackerAlarm trackerAlarm = alarm.getTrackerAlarms().get(0);
-                Log.i("Alarm time", trackerAlarm.getTime());
-                List<String> alarmDays = trackerAlarm.getWeekDays();
-                Log.i("Alarm days" , alarmDays.toString());
+                TrackerAlarm trackerAlarm1 = alarm.getTrackerAlarms().get(0);
+
+                List<String> alarmDays = trackerAlarm1.getWeekDays();
+
+                Log.d("alarmDays", String.valueOf(alarmDays.size()));
+
+                String[] weekDays = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"};
+
+                int weekCount = 0;
+
+                for(String weekDay : weekDays) {
+                    weekCount = weekCount << 1;
+
+                    if(alarmDays.contains(weekDay)) {
+                        weekCount = weekCount | 1;
+                    }
+                }
+
+                String[] time = trackerAlarm1.getTime().split("-");
+
+                Log.d("WeekCount", String.valueOf(weekCount));
+                AlarmData alarmData = new AlarmData(weekCount, trackerAlarm1.getSnoozeCount(), time[0]);
+                alarmData.save();
+
+//                AlarmData testData = AlarmData.findById(AlarmData.class, 1);
+//                Log.d("Alarm time", testData.getAlarmTime());
+//                Log.d("Days", String.valueOf(testData.getDays()));
+//                Log.d("Snooze count", String.valueOf(testData.getSnoozeCount()));
 
             } else if (requestType == RequestType.Devices) {
                 Response<List<FitbitDevice>> res = api.getDevices().execute();
                 List<FitbitDevice> devices = res.body();
                 FitbitDevice device = devices.get(0);
                 trackerID = Integer.parseInt(device.getId());
-                Log.i("Battery", device.getBattery());
-                Log.i("Sync time", device.getLastSyncTime());
+
+                String deviceVersion = "Fitbit " + device.getDeviceVersion();
+                String battery = device.getBattery();
+                Date date = new DateTime(device.getLastSyncTime()).toDate();
+                Date currentDate = new Date();
+
+                DeviceData deviceData = new DeviceData(deviceVersion, battery, date, currentDate);
+                deviceData.save();
+
+                DeviceData testData = DeviceData.findById(DeviceData.class, 1);
+
+                Log.d("Battery", testData.getBattery());
+                DateFormat df1 = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                Log.i("Sync time", df1.format(testData.getLastSyncTime()));
                 Log.i("Tracker ID", String.valueOf(trackerID));
+                Log.i("Creation time", df1.format(testData.getCreationTime()));
 
             } else if (requestType == RequestType.AccessToken) {
-                Thread.sleep(3000);
+                Thread.sleep(8000);
                 Map<String, String> body = new HashMap<>();
                 body.put("client_id", "2285P6");
                 body.put("grant_type", "authorization_code");
