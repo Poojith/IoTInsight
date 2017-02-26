@@ -1,5 +1,7 @@
 package com.poojithjain.iotinsight;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -24,10 +26,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.poojithjain.iotinsight.util.app.APIService;
 import com.poojithjain.iotinsight.util.app.AppConstants;
 import com.poojithjain.iotinsight.util.app.AppSharedPreferences;
 import com.poojithjain.iotinsight.util.net.api.FitbitAPITask;
 import com.poojithjain.iotinsight.util.net.data.RequestType;
+
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private Context context = this;
@@ -71,6 +76,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        boolean alarmUp = (PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(getApplicationContext(), APIService.class), PendingIntent.FLAG_NO_CREATE) != null);
+
+        if (!alarmUp) {
+            Calendar cal = Calendar.getInstance();
+            Intent serviceIntent = new Intent(MainActivity.this, APIService.class);
+            PendingIntent pintent = PendingIntent.getService(MainActivity.this, 0, serviceIntent, 0);
+            AlarmManager alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            // schedule every minute
+            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 60 * 1000, pintent);
+        }
+
     }
 
     @Override
@@ -105,6 +121,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(context, "You are already logged in", Toast.LENGTH_LONG).show();
                 return true;
             }
+        }
+
+        else if (id == R.id.action_alarm) {
+            new FitbitAPITask(context, RequestType.Alarm).execute();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
