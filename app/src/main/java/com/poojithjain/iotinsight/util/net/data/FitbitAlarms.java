@@ -1,9 +1,10 @@
-package com.poojithjain.iotinsight.util;
+package com.poojithjain.iotinsight.util.net.data;
 
 import java.util.List;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import com.poojithjain.iotinsight.util.net.data.TrackerAlarm;
 
 public class FitbitAlarms {
 
