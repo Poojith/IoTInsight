@@ -11,49 +11,49 @@ import java.util.Date;
 public class DeviceData extends SugarRecord {
     String deviceVersion;
     String battery;
-    Date lastSyncTime;
-    Date creationTime;
+    long lastSyncTime;
+    long creationTime;
 
     public DeviceData() {
 
     }
 
-    public DeviceData(String deviceVersion, String battery, Date date, Date currentDate) {
+    public DeviceData(String deviceVersion, String battery, long date, long currentDate) {
         this.deviceVersion = deviceVersion;
         this.battery = battery;
         this.lastSyncTime = date;
         this.creationTime = currentDate;
     }
 
-//    public String getDeviceVersion() {
-//        return deviceVersion;
-//    }
-//
-//    public void setDeviceVersion(String deviceVersion) {
-//        this.deviceVersion = deviceVersion;
-//    }
-//
-//    public String getBattery() {
-//        return battery;
-//    }
-//
-//    public void setBattery(String battery) {
-//        this.battery = battery;
-//    }
-//
-//    public Date getLastSyncTime() {
-//        return lastSyncTime;
-//    }
-//
-//    public void setLastSyncTime(Date lastSyncTime) {
-//        this.lastSyncTime = lastSyncTime;
-//    }
-//
-//    public Date getCreationTime() {
-//        return creationTime;
-//    }
-//
-//    public void setCreationTime(Date creationTime) {
-//        this.creationTime = creationTime;
-//    }
+    public String getDeviceVersion() {
+        return deviceVersion;
+    }
+
+    public void setDeviceVersion(String deviceVersion) {
+        this.deviceVersion = deviceVersion;
+    }
+
+    public String getBattery() {
+        return battery;
+    }
+
+    public void setBattery(String battery) {
+        this.battery = battery;
+    }
+
+    public long getLastSyncTime() {
+        return lastSyncTime;
+    }
+
+    public void setLastSyncTime(long lastSyncTime) {
+        this.lastSyncTime = lastSyncTime;
+    }
+
+    public long getCreationTime() {
+        return creationTime;
+    }
+
+    public void setCreationTime(long creationTime) {
+        this.creationTime = creationTime;
+    }
 }
