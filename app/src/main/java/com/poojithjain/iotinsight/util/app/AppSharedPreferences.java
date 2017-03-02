@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class AppSharedPreferences {
+
     private static AppSharedPreferences appSharedPreferences;
 
     // singleton holder

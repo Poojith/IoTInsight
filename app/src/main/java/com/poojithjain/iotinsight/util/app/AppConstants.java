@@ -2,12 +2,15 @@ package com.poojithjain.iotinsight.util.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.util.Base64;
 import android.util.Log;
 
+import com.poojithjain.iotinsight.R;
 import com.poojithjain.iotinsight.util.net.api.FitbitAPI;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 import okhttp3.Interceptor;
@@ -25,7 +28,7 @@ public class AppConstants {
     public static String[] tabTitles = new String[]{"Battery", "Sync", "Alarm"};
     private static final String BASE_URL = "https://api.fitbit.com/";
     private static String authorizationCode;
-    public static String[] weekDays = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"};
+    public static String[] weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
     public static String getAuthorizationCode() {
         return authorizationCode;
@@ -73,18 +76,17 @@ public class AppConstants {
                 // toggle between auth code and access token
                 if (sharedPrefs.getBoolean("firstRun", true)) {
                     String authorizationCode = getB64Auth();
-                    System.out.println("Inside IF CONDITIOOOOOOOOON");
-                    Log.d("Auth constants", authorizationCode);
+                    Log.e("Auth code B64", authorizationCode);
                     ongoing.addHeader("Authorization", authorizationCode);
                     ongoing.addHeader("Content-Type", "application/x-www-form-urlencoded");
                     SharedPreferences.Editor editor = AppSharedPreferences.getInstance().editor(context);
                     editor.putBoolean("firstRun", false);
+                    editor.putString("authCode", authorizationCode);
                     editor.commit();
 
                 } else {
-                    System.out.println("Inside ELSEEEEE CONDITIOOOOOOOOON");
-                    Log.i("Token type", sharedPrefs.getString("tokenType", ""));
-                    Log.i("Access token", sharedPrefs.getString("accessToken", ""));
+                    Log.e("Token type", sharedPrefs.getString("tokenType", ""));
+                    Log.e("Access token", sharedPrefs.getString("accessToken", ""));
 
                     ongoing.addHeader("Authorization",
                             getAccessToken(
@@ -112,10 +114,9 @@ public class AppConstants {
 
     public static Float getBatteryValue(int value) {
         int min = value - 10 < 0 ? 0 : value - 10;
-        int max = value;
 
         Random rand = new Random();
-        return (float) rand.nextInt((max - min) + 1) + min;
+        return (float) rand.nextInt((value - min) + 1) + min;
     }
 
     public static String getHumanAlarmDays(int alarmDays) {
@@ -138,7 +139,20 @@ public class AppConstants {
         int dayCount = (totalStringDays.length() + 1) / 4;
 
         String weekLine = String.format("Buzzes %d times weekly", (buzzCount + 1) * dayCount);
-        String dayLine = String.format("Buzzes average %.2f times daily", (buzzCount + 1) * dayCount / 7.0f);
+        String dayLine = String.format("Buzzes an average of %.2f times daily", (buzzCount + 1) * dayCount / 7.0f);
+
+        return String.format("%s\n%s", dayLine, weekLine);
+    }
+
+    public static String getBuzzStats(int buzzCount, List<Integer> alarmCounts) {
+        int weekCount = 0;
+        for (int i: alarmCounts) {
+            weekCount += i;
+        }
+        weekCount *= (buzzCount);
+
+        String weekLine = String.format("Buzzes %d times weekly", weekCount);
+        String dayLine = String.format("Buzzes an average of %.2f times daily", weekCount / 7.0f);
 
         return String.format("%s\n%s", dayLine, weekLine);
     }
