@@ -28,7 +28,7 @@ public class AppConstants {
     public static String[] tabTitles = new String[]{"Battery", "Sync", "Alarm"};
     private static final String BASE_URL = "https://api.fitbit.com/";
     private static String authorizationCode;
-    public static String[] weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    public static String[] weekDays = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"};
 
     public static String getAuthorizationCode() {
         return authorizationCode;
@@ -131,7 +131,8 @@ public class AppConstants {
                 result.append(weekDays[i].substring(0, 3) + ",");
             }
         }
-        result.deleteCharAt(result.length() - 1);
+        if(result!= null && result.length() > 1)
+            result.deleteCharAt(result.length() - 1);
         return result.toString();
     }
 
@@ -153,7 +154,9 @@ public class AppConstants {
 
         String weekLine = String.format("Buzzes %d times weekly", weekCount);
         String dayLine = String.format("Buzzes an average of %.2f times daily", weekCount / 7.0f);
+        String batteryLine =  String.format("Affects battery by %.2f", (weekCount / 7.0) * 4.5);
+        String finalBatteryLine = batteryLine + "%";
 
-        return String.format("%s\n%s", dayLine, weekLine);
+        return String.format("%s\n%s\n%s", dayLine, weekLine, finalBatteryLine);
     }
 }
