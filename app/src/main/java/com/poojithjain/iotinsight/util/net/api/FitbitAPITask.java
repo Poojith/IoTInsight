@@ -24,6 +24,8 @@ import java.util.Map;
 
 import retrofit2.Response;
 
+import static com.poojithjain.iotinsight.util.app.AppConstants.weekDays;
+
 /**
  * Created by Poojith on 20-02-2017.
  */
@@ -52,29 +54,31 @@ public class FitbitAPITask extends AsyncTask {
             if (requestType == RequestType.Alarm) {
                 Response<FitbitAlarms> alarms = api.getAlarm(trackerID).execute();
                 FitbitAlarms alarm = alarms.body();
-                TrackerAlarm trackerAlarm1 = alarm.getTrackerAlarms().get(0);
+                List<TrackerAlarm> trackerAlarms = alarm.getTrackerAlarms();
 
-                List<String> alarmDays = trackerAlarm1.getWeekDays();
+                AlarmData.deleteAll(AlarmData.class);
 
-                Log.d("alarmDays", String.valueOf(alarmDays.size()));
+                for (TrackerAlarm trackerAlarm : trackerAlarms) {
+                    List<String> alarmDays = trackerAlarm.getWeekDays();
 
-                String[] weekDays = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"};
+                    Log.d("alarmDays", String.valueOf(alarmDays.size()));
 
-                int weekCount = 0;
+                    int weekCount = 0;
 
-                for (String weekDay : weekDays) {
-                    weekCount = weekCount << 1;
+                    for (String weekDay : weekDays) {
+                        weekCount = weekCount << 1;
 
-                    if (alarmDays.contains(weekDay)) {
-                        weekCount = weekCount | 1;
+                        if (alarmDays.contains(weekDay)) {
+                            weekCount = weekCount | 1;
+                        }
                     }
+
+                    String[] time = trackerAlarm.getTime().split("-");
+
+                    Log.d("WeekCount", String.valueOf(weekCount));
+                    AlarmData alarmData = new AlarmData(weekCount, trackerAlarm.getSnoozeCount(), time[0]);
+                    alarmData.save();
                 }
-
-                String[] time = trackerAlarm1.getTime().split("-");
-
-                Log.d("WeekCount", String.valueOf(weekCount));
-                AlarmData alarmData = new AlarmData(weekCount, trackerAlarm1.getSnoozeCount(), time[0]);
-                alarmData.save();
 
 //                AlarmData testData = AlarmData.findById(AlarmData.class, 1);
 //                Log.d("Alarm time", testData.getAlarmTime());
@@ -84,19 +88,24 @@ public class FitbitAPITask extends AsyncTask {
             } else if (requestType == RequestType.Devices) {
                 Response<List<FitbitDevice>> res = api.getDevices().execute();
                 List<FitbitDevice> devices = res.body();
-                FitbitDevice device = devices.get(0);
-                trackerID = Integer.parseInt(device.getId());
 
-                String deviceVersion = "Fitbit " + device.getDeviceVersion();
-                String battery = device.getBattery();
+                if(devices != null) {
+                    FitbitDevice device = devices.get(0);
+                    trackerID = Integer.parseInt(device.getId());
 
-                long time = DateTime.parse(device.getLastSyncTime()).getMillis();
+                    String deviceVersion = "Fitbit " + device.getDeviceVersion();
+                    String battery = device.getBattery();
+
+                    long time = DateTime.parse(device.getLastSyncTime()).getMillis();
 
 
-                DeviceData deviceData = new DeviceData(deviceVersion, battery, time, System.currentTimeMillis());
-                deviceData.save();
+                    Log.e("Device info", deviceVersion);
 
-                DeviceData testData = DeviceData.findById(DeviceData.class, 1);
+                    DeviceData deviceData = new DeviceData(deviceVersion, battery, time, System.currentTimeMillis());
+                    deviceData.save();
+
+                    DeviceData testData = DeviceData.findById(DeviceData.class, 1);
+                }
 //
 //                Log.d("Battery", testData.getBattery());
 //                Log.i("Sync time", testData.getLastSyncTime());
@@ -110,6 +119,7 @@ public class FitbitAPITask extends AsyncTask {
                 String authCode = AppSharedPreferences.getInstance().getSharedPreferences(context).getString("authCode", "").trim();
                 body.put("code", authCode);
                 Log.d("Check auth code", authCode);
+
 
                 Response<AuthResponseBody> authResponse = api.getTokens(body).execute();
                 AuthResponseBody responseBody = authResponse.body();
