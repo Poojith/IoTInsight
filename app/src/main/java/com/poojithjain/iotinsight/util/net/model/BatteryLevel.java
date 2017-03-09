@@ -5,10 +5,10 @@ package com.poojithjain.iotinsight.util.net.model;
  */
 
 public enum BatteryLevel {
-    High(90),
-    Medium(60),
-    Low(30),
-    Empty(0);
+    High(95),
+    Medium(70),
+    Low(40),
+    Empty(10);
 
     public int val;
 
