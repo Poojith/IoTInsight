@@ -5,11 +5,30 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name="com.orm.SugarApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <meta-data
+            android:name="DATABASE"
+            android:value="diagnostics.db" />
+        <meta-data
+            android:name="VERSION"
+            android:value="6" />
+        <meta-data
+            android:name="QUERY_LOG"
+            android:value="true" />
+        <meta-data
+            android:name="DOMAIN_PACKAGE_NAME"
+            android:value="com.poojithjain.iotinsight" />
+
+        <service
+            android:name=".util.app.DeviceService"
+            android:enabled="true"
+            android:exported="true" />
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
@@ -19,14 +38,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
+
+            <intent-filter >
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="iot-insight"
-                    android:host="main-activity" />
-
+                <data android:scheme="iot-insight" android:host="main-activity" />
             </intent-filter>
+
         </activity>
     </application>
 
