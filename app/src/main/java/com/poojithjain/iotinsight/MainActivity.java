@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.customtabs.CustomTabsIntent;
@@ -21,9 +20,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
+import com.db.chart.model.BarSet;
 import com.db.chart.model.LineSet;
+import com.db.chart.view.BarChartView;
 import com.db.chart.view.LineChartView;
 import com.poojithjain.iotinsight.util.app.AlarmService;
 import com.poojithjain.iotinsight.util.app.DeviceService;
@@ -35,6 +34,7 @@ import com.poojithjain.iotinsight.util.net.model.AlarmData;
 import com.poojithjain.iotinsight.util.net.model.BatteryLevel;
 import com.poojithjain.iotinsight.util.net.model.DeviceData;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +44,9 @@ import java.util.TreeMap;
 public class MainActivity extends AppCompatActivity {
 
     private Context context = this;
+    //TODO replace placeholder info
+    private String deviceInfo;
+    private String date = "August 2016";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout layout = (LinearLayout) findViewById(R.id.content_main);
 
         if (getIntent().getBooleanExtra("refresh", false)) {
-            Snackbar.make(layout, "Refreshing Data ...", Snackbar.LENGTH_SHORT).show();
+            Snackbar.make(layout, "Refreshing data ...", Snackbar.LENGTH_LONG).show();
         }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -68,45 +71,60 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        listenURI();
+
+        redirectAuthURI();
         handleBatteryService();
         handleAlarmService();
         handleBatteryStats();
         handleAlarmStats();
+        // TODO get user info from API.
+        userInfo();
+
     }
 
     private void handleAlarmStats() {
         List<AlarmData> alarmData = AlarmData.listAll(AlarmData.class);
-        LayoutInflater vi = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        // Dynamically display data
+        LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         ViewGroup insertPoint = (ViewGroup) findViewById(R.id.alarmParentLayout);
 
-
-        // handle total
+        // Handle total
         int count = alarmData.size();
         int totalBuzzCount = 0;
         int totalAlarmDays = 0;
-        for (AlarmData alarm: alarmData) {
+        List<Integer> alarmCounts = new ArrayList<>();
+
+        for (AlarmData alarm : alarmData) {
             totalBuzzCount += alarm.getSnoozeCount();
             totalAlarmDays = totalAlarmDays | alarm.getDays();
+            alarmCounts.add((AppConstants.getHumanAlarmDays(alarm.getDays()).length()  + 1) / 4);
         }
 
-        View v = vi.inflate(R.layout.alarm_item, null);
+        View v = layoutInflater.inflate(R.layout.alarm_item, null);
 
         TextView numAlarmsTextView = (TextView) v.findViewById(R.id.numAlarms);
-        numAlarmsTextView.setText(String.format("%d alarms", count));
+        if (count == 1)
+            numAlarmsTextView.setText(String.format("%d alarm", count));
+        else
+            numAlarmsTextView.setText(String.format("%d alarms", count));
+
+        numAlarmsTextView.setTextColor(getResources().getColor(R.color.Teal));
 
         TextView totalAlarmDaysTextView = (TextView) v.findViewById(R.id.alarmsDays);
         String totalStringDays = AppConstants.getHumanAlarmDays(totalAlarmDays);
-        totalAlarmDaysTextView.setText(totalStringDays);
+        totalAlarmDaysTextView.setText("Alarm set on: " + totalStringDays);
 
         TextView totalBuzzStatsTextView = (TextView) v.findViewById(R.id.buzzStats);
-        totalBuzzStatsTextView.setText(AppConstants.getBuzzStats(totalBuzzCount, totalStringDays));
+        totalBuzzStatsTextView.setText(AppConstants.getBuzzStats(totalBuzzCount, alarmCounts));
+
 
         insertPoint.addView(v, -1, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+
         // handle individual
-        for (AlarmData alarm: alarmData) {
-            View view = vi.inflate(R.layout.alarm_item, null);
+        for (AlarmData alarm : alarmData) {
+            View view = layoutInflater.inflate(R.layout.alarm_item, null);
             int buzzCount = 0;
             int alarmDays = 0;
 
@@ -115,10 +133,11 @@ public class MainActivity extends AppCompatActivity {
 
             TextView timeTextView = (TextView) view.findViewById(R.id.numAlarms);
             timeTextView.setText(alarm.getAlarmTime());
+            timeTextView.setTextColor(getResources().getColor(R.color.Teal));
 
             TextView alarmDaysTextView = (TextView) view.findViewById(R.id.alarmsDays);
             String stringDays = AppConstants.getHumanAlarmDays(alarmDays);
-            alarmDaysTextView.setText(stringDays);
+            alarmDaysTextView.setText("Alarm set on: " + stringDays);
 
             TextView buzzStatsTextView = (TextView) view.findViewById(R.id.buzzStats);
             buzzStatsTextView.setText(AppConstants.getBuzzStats(buzzCount, stringDays));
@@ -128,38 +147,90 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void handleBatteryStats() {
+
         long priorTime = System.currentTimeMillis() - (10 * 60 * 60 * 1000);
 
         List<DeviceData> results = DeviceData.find(DeviceData.class, "last_Sync_Time > ? ", String.valueOf(priorTime));
-        Map<String, Float> chartData = new HashMap<>();
 
-        for (DeviceData result: results) {
-            Calendar calendar = Calendar.getInstance();
-            long time = result.getLastSyncTime();
-            calendar.setTimeInMillis(time);
-            String thisKey = String.format("%d hrs", calendar.get(Calendar.HOUR_OF_DAY));
-            Float thisValue = AppConstants.getBatteryValue(BatteryLevel.valueOf(result.getBattery()).getValue());
+        if(results != null) {
+            Map<String, Float> chartData = new HashMap<>();
+            Map<String, Float> syncData = new HashMap<>();
 
-            chartData.put(thisKey, thisValue);
+//            Log.e("Device info", deviceInfo);
+            Log.e("Status", "CIMUNG HEREEEE");
+            long lastSyncTime = results.get(0).getLastSyncTime();
+
+            Log.e("Another status", "YOOOOO HEREEEE");
+
+            for (DeviceData result : results) {
+                Calendar calendar = Calendar.getInstance();
+                long time = result.getLastSyncTime();
+                calendar.setTimeInMillis(time);
+                String thisKey = String.format("%d ", calendar.get(Calendar.HOUR_OF_DAY));
+
+                Float thisValue = (float) BatteryLevel.valueOf(result.getBattery()).getValue();
+
+                deviceInfo = result.getDeviceVersion();
+
+                if (lastSyncTime != time) {
+                    if(syncData.containsKey(thisKey)) {
+                        syncData.put(thisKey, syncData.get(thisKey) + 1);
+                    } else {
+                        syncData.put(thisKey, 1.0f);
+                    }
+                    lastSyncTime = time;
+                }
+                chartData.put(thisKey, thisValue);
+            }
+            Log.e("Size of result", String.valueOf(chartData.size()));
+
+
+            LineChartView chartView = (LineChartView) findViewById(R.id.battery_linechart);
+            LineSet dataset = new LineSet();
+
+            Map<String, Float> treeMap = new TreeMap<>(chartData);
+
+            for (String key : treeMap.keySet()) {
+                dataset.addPoint(key, chartData.get(key));
+            }
+
+            dataset.setColor(getResources().getColor(R.color.Crimson));
+            dataset.setDotsColor(getResources().getColor(R.color.Yellow));
+            dataset.setDotsStrokeColor(getResources().getColor(R.color.MidnightBlue));
+            dataset.setDotsStrokeThickness(9f);
+            dataset.setThickness(14f);
+            chartView.setAxisBorderValues(0, 100, 20);
+            chartView.addData(dataset);
+            chartView.show();
+//
+            BarChartView barChartView = (BarChartView) findViewById(R.id.sync_barchart);
+            BarSet barSet = new BarSet();
+
+            Map<String, Float> treeSyncMap = new TreeMap<>(syncData);
+
+            Log.e("Length", String.valueOf(syncData.size()));
+
+            for (String key : treeSyncMap.keySet()) {
+                barSet.addBar(key, syncData.get(key));
+                Log.e("Bar value", String.valueOf(syncData.get(key)));
+            }
+//
+            barSet.setColor(getResources().getColor(R.color.LimeGreen));
+            barChartView.setBarBackgroundColor(getResources().getColor(R.color.Silver));
+            barChartView.setAxisBorderValues(0,10,2);
+            barChartView.setBarSpacing(22f);
+            barChartView.addData(barSet);
+            barChartView.setRoundCorners(28f);
+            barChartView.show();
         }
+    }
 
-        Log.e("Size of result", String.valueOf(chartData.size()));
-
-
-        LineChartView chartView = (LineChartView) findViewById(R.id.battery_linechart);
-        LineSet dataset = new LineSet();
-
-        Map<String, Float> treeMap = new TreeMap<>(chartData);
-
-        for (String key: treeMap.keySet()) {
-            dataset.addPoint(key, chartData.get(key));
-        }
-//            dataset.addPoint("Test", 45.2f);
-//            dataset.addPoint(new Point("TestValue", 23.34f));
-        dataset.setColor(Color.BLUE);
-        chartView.addData(dataset);
-        chartView.setAxisBorderValues(0, 100, 20);
-        chartView.show();
+    private void userInfo() {
+        String device = "\n Device name: " + deviceInfo;
+        String functioning = "\n Device active since: " + date;
+        String placeHolderUserInfo = "\n Owner: Narendra Nath Joshi \n Location: Pittsburgh, PA";
+        TextView text = (TextView) findViewById(R.id.userInfo);
+        text.setText(device + functioning + placeHolderUserInfo);
     }
 
     private void handleBatteryService() {
@@ -188,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void listenURI() {
+    private void redirectAuthURI() {
         Intent intent = getIntent();
         if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             Uri uri = intent.getData();
@@ -220,18 +291,24 @@ public class MainActivity extends AppCompatActivity {
             return true;
 
         } else if (id == R.id.action_login) {
-            if (!AppSharedPreferences.getInstance().getSharedPreferences(context).getBoolean("loginStatus", false)) {
-                String url = "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=2285P6&scope=settings profile heartrate";
+//            if (!AppSharedPreferences.getInstance().getSharedPreferences(context).getBoolean("loginStatus", false)) {
+                String url = "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=2285P6&prompt=consent&scope=settings profile heartrate";
                 CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
                 CustomTabsIntent customTabsIntent = builder.build();
                 customTabsIntent.launchUrl(this, Uri.parse(url));
 
-                new FitbitAPITask(context, RequestType.AccessToken).execute();
-                return true;
-            } else {
-                Toast.makeText(context, "You are already logged in", Toast.LENGTH_LONG).show();
-                return true;
+            try {
+                Thread.sleep(8 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+
+            new FitbitAPITask(context, RequestType.AccessToken).execute();
+                return true;
+//            } else {
+//                Toast.makeText(context, "You are already logged in", Toast.LENGTH_LONG).show();
+//                return true;
+//            }
         } else if (id == R.id.action_alarm) {
             new FitbitAPITask(context, RequestType.Alarm).execute();
             return true;
